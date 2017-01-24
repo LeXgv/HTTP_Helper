@@ -1,0 +1,5 @@
+#folder for helper files Visual Studio
+mvs/
+#folder for make project
+build/
+.vs/
