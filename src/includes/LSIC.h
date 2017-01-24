@@ -28,14 +28,20 @@ namespace lsic
 	private:
 		char *name;
 		char *value;
-		int time[5];
-		char day[3];
+		//int time[5];
+		short dayWeek;
+		short dayMonth;
+		short hour;
+		short minutes;
+		short seconds;
+		int year;
+		short month;
 		char *domain;
 		char *path;
 	public:
 		Cookie();
 		Cookie(const Cookie &obj);
-		Cookie(const char *_name_, const char *_value_, const char *_path_, const char *_domain_, int day = 0, int month = 0, int hour = 0, int min = 0);
+		Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _day_, short _month_, short _hour_, short _min_, short _seconds_, int _year_);
 		/*вытаскивает все куки из заголовков ответа сервера*/
 		static int Parse(const std::string &str, std::vector<Cookie> &storage);
 		static int Parse(const char *str, std::vector<Cookie> &storage);
@@ -58,6 +64,7 @@ namespace lsic
 	private:
 		static int parseExpires(std::string str,int start_index ,Cookie &c);
 	//	static int parseDPM(std::string str, Cookie &c, int that); // that = 0: Domain 1:Path 2:Max-Age
+		static int getNumber(std::string str, int ind);
 
 
 	};

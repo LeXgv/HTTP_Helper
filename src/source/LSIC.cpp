@@ -15,7 +15,13 @@ lsic::Cookie::Cookie()
 	value = nullptr;
 	domain = nullptr;
 	path = nullptr;
-	for (int i = 0; i < 5; i++) time[i] = 0;
+	dayWeek = -1;
+	dayMonth = -1;
+	hour = -1;
+	minutes = -1;
+	seconds = -1;
+	year = -1;
+	month = -1;
 }
 
 lsic::Cookie::Cookie(const Cookie & obj)
@@ -24,10 +30,16 @@ lsic::Cookie::Cookie(const Cookie & obj)
 	value = obj.value;
 	domain = obj.domain;
 	path = obj.path;
-	for (int i = 0; i < 5; i++) time[i] = obj.time[i];
+	dayMonth = obj.dayMonth;
+	dayWeek = obj.dayWeek;
+	hour = obj.hour;
+	minutes = obj.minutes;
+	seconds = obj.seconds;
+	year = obj.year;
+	month = obj.month;
 }
 
-lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, int day, int month, int hour, int min)
+lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _day_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
 {
 	int i = 0;
 	for (; _name_[i] != '\0'; i++) name[i] = _name_[i];
@@ -41,11 +53,13 @@ lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _pa
 	i = 0;
 	for (; _domain_[i] != '\0'; i++) domain[i] = _domain_[i];
 	domain[i] = '\0';
-	time[0] = day;
-	time[1] = month;
-	time[2] = hour;
-	time[3] = min;
-  }
+	dayMonth = _day_;
+	hour = _hour_;
+	minutes = _min_;
+	seconds = _seconds_;
+	year = _year_;
+	month = _month_;
+}
 
 int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 {
@@ -212,14 +226,103 @@ int lsic::Cookie::parseExpires(std::string str,int ind , Cookie & c)
 {
 	//записываем название дня
 	//двигаемся к записи дня
-	char day[3];
+	char _day[5];
 	while (str[ind] != '=')ind++;
 	ind++;
 	/*вытаскиваем день недели и преобразуем в число от 1 до 7*/
-	for (int i = 0; str[ind] != ','; i++, ind++) day[i] = str[ind];
-	//доделать
-	ind +=2;
-	//
-	for (int i = 0; str[ind] != ' '; i++, ind++) 
+	for (int i = 0; i<2; i++, ind++) _day[i] = str[ind];
+	switch (_day[0])
+	{
+		//One of "Mon1", "Tue2", "Wed3", "Thu4", "Fri5", "Sat6", or "Sun7"
+	//Mon
+	case 'M':
+		c.dayWeek = 1;
+		break;
+	//Tue or Thu
+	case 'T':
+		if(_day[1] == 'u') c.dayWeek = 2;
+		else c.dayWeek = 4;
+		break;
+	//Wed
+	case 'W':
+		c.dayWeek = 3;
+		break;
+	//Fri
+	case 'F':
+		c.dayWeek = 5;
+		break;
+	//Sat or Sun
+	case 'S':
+		if (_day[1] == 'a') c.dayWeek = 6;
+		else c.dayWeek = 7;
+			break;
+	default:
+		//error
+		break;
+
+	}
+	//вытаскиваем номер дня в месяце
+	ind += 3; // перепригивам заптую и пробел
+	_day[0] = str[ind++];
+	_day[1] = str[ind];
+	_day[2] = '\0';
+	c.dayMonth = atoi(_day);
+	//вытаскиваем месяц
+	ind += 2; // перепрыгиваем пробел
+	for (int i = 0; i<3; i++, ind++) _day[i] = str[ind];
+	_day[3] = '\0';
+	switch (_day[0])
+		//One of "Jan1", "Feb2", "Mar3", "Apr4", "May5", "Jun6", "Jul7", "Aug8", "Sep9", "Oct10", "Nov11", "Dec12" 
+	{
+	case'J':
+		if (_day[1] == 'a') c.month = 1;
+		else if (_day[2] == 'n') c.month = 6;
+		else c.month = 7;
+			break;
+	case 'F':
+		c.month = 2;
+		break;
+	case 'M':
+		if (_day[2] == 'r') c.month = 3;
+		else c.month = 5;
+		break;
+	case 'A':
+		if (_day[1] == 'p') c.month = 4;
+		else c.month = 8;
+		break;
+	case 'S':
+		c.month = 9;
+		break;
+	case 'O':
+		c.month = 10;
+		break;
+	case 'N':
+		c.month = 11;
+		break;
+	case 'D':
+		c.month = 12;
+		break;
+	default:
+		//error
+		break;
+	}
+	//вытаскивание года
+	ind++;//пропускаем пробел
+	for (int i = 0; i < 4; i++, ind++) _day[i] = str[ind];
+	_day[4] = '\0';
+	c.year = atoi(_day);
+	ind++;//пропускаем пробел
+	//вытаскивание времени
+	for (int i = 0; str[ind] != ':'; ind++, i++) _day[i] = str[ind];
+	ind++;
+	_day[2] = '\0';
+	c.hour = atoi(_day);
+	for (int i = 0; str[ind] != ':'; ind++, i++) _day[i] = str[ind];
+	ind++;
+	_day[2] = '\0';
+	c.minutes = atoi(_day);
+	for (int i = 0; str[ind] != ' '; ind++, i++) _day[i] = str[ind];
+	_day[2] = '\0';
+	c.seconds = atoi(_day);
 	return 0;
 }
