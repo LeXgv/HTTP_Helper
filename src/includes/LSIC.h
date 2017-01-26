@@ -35,6 +35,7 @@ namespace lsic
 		short minutes;
 		short seconds;
 		int year;
+		int maxAge;
 		short month;
 		char *domain;
 		char *path;
@@ -62,8 +63,8 @@ namespace lsic
 		int setValue(const std::string v);
 		int setValue(const char *v);
 	private:
-		static int parseExpires(std::string str,int start_index ,Cookie &c);
-	//	static int parseDPM(std::string str, Cookie &c, int that); // that = 0: Domain 1:Path 2:Max-Age
+		static int parseExpires(std::string str,int &start_index ,Cookie &c);
+		static int parseDPM(const std::string &str, char *&that, int &ind); // that = 0: Domain 1:Path 2:Max-Age
 		static int getNumber(std::string str, int ind);
 
 

@@ -22,6 +22,7 @@ lsic::Cookie::Cookie()
 	seconds = -1;
 	year = -1;
 	month = -1;
+	maxAge = -1;
 }
 
 lsic::Cookie::Cookie(const Cookie & obj)
@@ -37,6 +38,7 @@ lsic::Cookie::Cookie(const Cookie & obj)
 	seconds = obj.seconds;
 	year = obj.year;
 	month = obj.month;
+	maxAge = obj.maxAge;
 }
 
 lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _day_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
@@ -97,11 +99,13 @@ int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 			if (str[itmp] != ' ') nv.push_back(str[itmp]);
 		}
 		NewCookie.setValue(nv);
-		itmp++;
+		//itmp++;
 		nv.clear();
 		/*Вытаскивание опциональных параметров, таких как дата, хост, путь и др...*/
-		while (str[itmp] != '/r')
+		while (str[itmp] != '/r' && str[itmp] != '/n')
 		{
+			//todo минимизировать количество проверок на конец куки
+			itmp++;
 			for (; str[itmp] != '='; itmp++)
 			{
 				if (str[itmp] != ' ') nv.push_back(str[itmp]);
@@ -113,24 +117,28 @@ int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 			case 'e':
 			{
 				parseExpires(str,itmp ,NewCookie);
+				nv.clear();
 				break;
 			}
 			//Domain
 			case 'd':
 			{
-//				parseDPM(nv, NewCookie, 0);
+				parseDPM(str, NewCookie.domain, itmp);
+				nv.clear();
 				break;
 			}
 			//Path
 			case 'p':
 			{
-			//	parseDPM(nv, NewCookie, 1);
+			parseDPM(str, NewCookie.path, itmp);
+				nv.clear();
 				break;
 			}
 			//Max-Age
 			case 'm':
 			{
-//				parseDPM(nv, NewCookie, 2);
+			//parseDPM(nv, NewCookie.maxAge);
+				nv.clear();
 				break;
 			}
 			default:
@@ -222,7 +230,7 @@ int lsic::Cookie::setValue(const char * _value_)
 	return 0;
 }
 
-int lsic::Cookie::parseExpires(std::string str,int ind , Cookie & c)
+int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
 {
 	//записываем название дня
 	//двигаемся к записи дня
@@ -324,5 +332,30 @@ int lsic::Cookie::parseExpires(std::string str,int ind , Cookie & c)
 	for (int i = 0; str[ind] != ' '; ind++, i++) _day[i] = str[ind];
 	_day[2] = '\0';
 	c.seconds = atoi(_day);
+	//пропускаем все остальные флаги даты, так как код пока их не обрабатывает
+	//todo Доделлать обработку остальных флагов даты
+	for (; str[ind] != ';' && str[ind] != '\n'; ind++);
+	ind++;
 	return 0;
 }
+
+int lsic::Cookie::parseDPM(const std::string &str, char *&that, int &ind)
+{
+	ind++; // пропуск знака равно
+	//считаем длину значения
+	int size = 0;
+	for (int i = ind; str[i] != ';' && str[i] != '\n'; i++)
+	{
+		if (str[ind] != ' ') size++;
+	}
+	that = new char[size + 1];
+	for (int i = 0; i < size; i++, ind++)
+	{
+		char tmp = str[ind];
+		if (tmp != ' ') that[i] = tmp;
+	}
+	that[size] = '\0';
+	return 0;
+}
+
+
