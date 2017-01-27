@@ -41,7 +41,7 @@ lsic::Cookie::Cookie(const Cookie & obj)
 	maxAge = obj.maxAge;
 }
 
-lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _day_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
+lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_,short _dayMonth_ ,short _dayWeek_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
 {
 	int i = 0;
 	for (; _name_[i] != '\0'; i++) name[i] = _name_[i];
@@ -55,12 +55,13 @@ lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _pa
 	i = 0;
 	for (; _domain_[i] != '\0'; i++) domain[i] = _domain_[i];
 	domain[i] = '\0';
-	dayMonth = _day_;
+	/*dayMonth = _day_;
 	hour = _hour_;
 	minutes = _min_;
 	seconds = _seconds_;
 	year = _year_;
-	month = _month_;
+	month = _month_;*/
+	setExpires(_month_ , _dayWeek_, _dayMonth_, _year_, _hour_, _min_, _seconds_);
 }
 
 int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
@@ -116,8 +117,9 @@ int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 				//Expires
 			case 'e':
 			{
-				parseExpires(str,itmp ,NewCookie);
+				int err = parseExpires(str,itmp ,NewCookie);
 				nv.clear();
+				if (err < 0) return err;
 				break;
 			}
 			//Domain
@@ -143,7 +145,7 @@ int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 			}
 			default:
 			{
-				//error
+				return -7;
 			}
 			}
 		}
@@ -230,13 +232,100 @@ int lsic::Cookie::setValue(const char * _value_)
 	return 0;
 }
 
-int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
+char * lsic::Cookie::getPath()
+{
+	return path;
+}
+
+int lsic::Cookie::setPath(const std::string & v)
+{
+	if (path != nullptr)
+	{
+		for (int i = 0; path[i] != '\0'; i++) path[i] = ' ';
+		delete[] path;
+	}
+	int size = v.size();
+	path = new char[size];
+	for (int i = 0; i < size; i++)
+		path[i] = v[i];
+	return 0;
+}
+
+int lsic::Cookie::setPath(const char * v)
+{
+	if (path != nullptr)
+	{
+		for (int i = 0; path[i] != '\0'; i++) path[i] = ' ';
+		delete[] path;
+	}
+	int size = 0;
+	while (v[size] != '\0') size++;
+	size++;
+	path = new char[size];
+	for (int i = 0; i < size; i++)
+		path[i] = v[i];
+	return 0;
+}
+
+int lsic::Cookie::setExpires(short _month_, short _dayWeek_, short _dayMonth_, int _year_, short _hour_, short _minutes_, short _seconds_)
+{
+	if (_month_ > 0 && _month_ < 13 && _dayWeek_ > 0 && _dayWeek_ < 8 && _dayMonth_ > 0 && _dayMonth_ < 32 && _hour_ > -1
+		&& _hour_ < 24 && _minutes_ > -1 && _minutes_ < 60 && _seconds_ > -1 && _seconds_ < 60)
+	{
+		dayWeek = _dayWeek_;
+		dayMonth = _dayMonth_;
+		year = _year_;
+		hour = _hour_;
+		minutes = _minutes_;
+		seconds = _seconds_;
+		return 0;
+	}
+	else 
+		return -1;
+}
+
+int lsic::Cookie::setExpires(std::string _data_)
+{
+	int ind = 0;
+	parseExpires(_data_, ind, *this, false);
+	return 0;
+}
+
+int lsic::Cookie::notExpire()
+{
+	dayWeek = -1;
+	dayMonth = -1;
+	year = -1;
+	hour = -1;
+	minutes = -1;
+	seconds = -1;
+	return 0;
+}
+
+int lsic::Cookie::setMaxAge(int _seconds_)
+{
+	if (_seconds_ > 0)
+	{
+		maxAge = _seconds_;
+	}
+	else
+	{
+		if (_seconds_ == 0);// немнедленное уничтожение куки;
+		else maxAge = -1;
+	} 
+	return 0;
+}
+
+int lsic::Cookie::parseExpires(const std::string &str,int &ind , Cookie & c, bool is)
 {
 	//записываем название дня
 	//двигаемся к записи дня
 	char _day[5];
-	while (str[ind] != '=')ind++;
-	ind++;
+	if (is)
+	{
+		while (str[ind] != '=')ind++;
+		ind++;
+	}
 	/*вытаскиваем день недели и преобразуем в число от 1 до 7*/
 	for (int i = 0; i<2; i++, ind++) _day[i] = str[ind];
 	switch (_day[0])
@@ -265,7 +354,7 @@ int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
 		else c.dayWeek = 7;
 			break;
 	default:
-		//error
+		return -1;
 		break;
 
 	}
@@ -274,7 +363,9 @@ int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
 	_day[0] = str[ind++];
 	_day[1] = str[ind];
 	_day[2] = '\0';
-	c.dayMonth = atoi(_day);
+	short tmpDay = atoi(_day);
+	if (tmpDay < 0 && tmpDay > 31) return -2;
+	c.dayMonth = tmpDay;
 	//вытаскиваем месяц
 	ind += 2; // перепрыгиваем пробел
 	for (int i = 0; i<3; i++, ind++) _day[i] = str[ind];
@@ -311,7 +402,7 @@ int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
 		c.month = 12;
 		break;
 	default:
-		//error
+		return -3;
 		break;
 	}
 	//вытаскивание года
@@ -324,14 +415,20 @@ int lsic::Cookie::parseExpires(std::string str,int &ind , Cookie & c)
 	for (int i = 0; str[ind] != ':'; ind++, i++) _day[i] = str[ind];
 	ind++;
 	_day[2] = '\0';
-	c.hour = atoi(_day);
+	tmpDay = atoi(_day);
+	if (tmpDay < 0 && tmpDay > 60) return -4;
+	c.hour = tmpDay;
 	for (int i = 0; str[ind] != ':'; ind++, i++) _day[i] = str[ind];
 	ind++;
 	_day[2] = '\0';
-	c.minutes = atoi(_day);
+	tmpDay = atoi(_day);
+	if (tmpDay < 0 && tmpDay > 60) return -5;
+	c.minutes = tmpDay;
 	for (int i = 0; str[ind] != ' '; ind++, i++) _day[i] = str[ind];
 	_day[2] = '\0';
-	c.seconds = atoi(_day);
+	tmpDay = atoi(_day);
+	if (tmpDay < 0 && tmpDay > 60) return -6;
+	c.seconds = tmpDay;
 	//пропускаем все остальные флаги даты, так как код пока их не обрабатывает
 	//todo Доделлать обработку остальных флагов даты
 	for (; str[ind] != ';' && str[ind] != '\n'; ind++);

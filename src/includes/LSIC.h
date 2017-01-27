@@ -42,12 +42,12 @@ namespace lsic
 	public:
 		Cookie();
 		Cookie(const Cookie &obj);
-		Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _day_, short _month_, short _hour_, short _min_, short _seconds_, int _year_);
+		Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _dayMonth_, short _dayWeek_, short _month_, short _hour_, short _min_, short _seconds_, int _year_);
 		/*вытаскивает все куки из заголовков ответа сервера*/
 		static int Parse(const std::string &str, std::vector<Cookie> &storage);
-		static int Parse(const char *str, std::vector<Cookie> &storage);
+		/*static int Parse(const char *str, std::vector<Cookie> &storage);
 		static int Parse(const std::string &str, Cookie **storage);
-		static int Parse(const char *str, Cookie **storage);
+		static int Parse(const char *str, Cookie **storage);*/
 		/*возвращает имя данной куки в хранилище стринг*/
 		std::string name_string() const;
 		/*возвращает имя данной куки в массиве чаров*/
@@ -62,10 +62,18 @@ namespace lsic
 		/*установить новое значение для данной куки*/
 		int setValue(const std::string v);
 		int setValue(const char *v);
+		/*Функции возвращающи значения полей класса*/
+		  char *getPath();
+		  int setPath(const std::string &v);
+		  int setPath(const char *v);
+		  /*Функции устанавливающие значения полей класса*/
+		  int setExpires(short _month_, short _dayWeek_, short _dayMonth_, int _year_, short _hour_ = 0, short _minutes_ = 0, short _seconds_ = 0);
+		  int setExpires(std::string _data_);
+		  int notExpire();
+		  int setMaxAge(int _seconds_);
 	private:
-		static int parseExpires(std::string str,int &start_index ,Cookie &c);
+		static int parseExpires(const std::string &str,int &start_index ,Cookie &c, bool is = true);
 		static int parseDPM(const std::string &str, char *&that, int &ind); // that = 0: Domain 1:Path 2:Max-Age
-		static int getNumber(std::string str, int ind);
 
 
 	};
