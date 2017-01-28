@@ -71,7 +71,7 @@ namespace lsic
 		  /*возвращает строку даты смерти куки в формате:
 		  <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT*/
 		  std::string getExpiresStr();
-		  int getExpires(char arr[7]);// better don't use
+		  //int getExpires(char arr[7]);// better don't use
 		  /*----Функции устанавливающие значения полей класса----*/
 		  /*изменить название куки*/
 		  int setName(const std::string _name_);
@@ -103,7 +103,9 @@ namespace lsic
 	class Request
 	{
 	private:
-		std::string **request;
+		std::string body;
+		std::vector<Cookie> cookies;
+		std::string Headers;
 	public:
 		Request();
 		Request(const std::string &r_str);
