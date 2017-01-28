@@ -163,6 +163,116 @@ const char * lsic::Cookie::name_char() const
 	return name;
 }
 
+int lsic::Cookie::getExpires(int arr[7])
+{
+	if (arr == nullptr)
+		return -1;
+	arr[0] = dayWeek;
+	arr[1] = dayMonth;
+	arr[2] = month;
+	arr[3] = year;
+	arr[4] = hour;
+	arr[5] = minutes;
+	arr[6] = seconds;
+	return 0;
+}
+
+std::vector<int> lsic::Cookie::getExpiresVec()
+{
+	std::vector<int> Expires;
+	Expires.push_back(dayWeek);
+	Expires.push_back(dayMonth);
+	Expires.push_back(month);
+	Expires.push_back(year);
+	Expires.push_back(hour);
+	Expires.push_back(minutes);
+	Expires.push_back(seconds);
+	return Expires;
+}
+
+std::string lsic::Cookie::getExpiresStr()
+{
+	std::string Expires;
+	switch (dayWeek)
+	{
+	case 1:
+		Expires += "Mon, ";
+		break;
+	case 2:
+		Expires += "Tue, ";
+		break;
+	case 3:
+		Expires += "Wed, ";
+		break;
+	case 4:
+		Expires += "Thu, ";
+		break;
+	case 5:
+		Expires += "Fri, ";
+		break;
+	case 6:
+		Expires += "Sat, ";
+		break;
+	case 7:
+		Expires += "Sun, ";
+		break;
+	default:
+		break;
+	}
+	numToChar(Expires, dayMonth);
+	Expires += ' ';
+	switch (month)
+	{
+	case 1:
+		Expires += "Jan ";
+		break;
+	case 2:
+		Expires += "Feb ";
+		break;
+	case 3:
+		Expires += "Mar ";
+		break;
+	case 4:
+		Expires += "Apr ";
+		break;
+	case 5:
+		Expires += "May ";
+		break;
+	case 6:
+		Expires += "Jun ";
+		break;
+	case 7:
+		Expires += "Jul ";
+		break;
+	case 8:
+		Expires += "Aug ";
+		break;
+	case 9:
+		Expires += "Sep ";
+		break;
+	case 10:
+		Expires += "Oct ";
+		break;
+	case 11:
+		Expires += "Nov ";
+		break;
+	case 12:
+		Expires += "Dec ";
+		break;
+	default:
+		break;
+	}
+	numToChar(Expires, year);
+	Expires += ' ';
+	numToChar(Expires, hour);
+	Expires += ':';
+	numToChar(Expires, minutes);
+	Expires += ':';
+	numToChar(Expires, seconds);
+	Expires += " GMT";
+	return Expires;
+}
+
 std::string lsic::Cookie::value_string() const
 {
 	return std::string(value);
@@ -316,6 +426,24 @@ int lsic::Cookie::setMaxAge(int _seconds_)
 	return 0;
 }
 
+int lsic::Cookie::setDomain(const std::string _domain_)
+{
+	int size = _domain_.size();
+	domain = new char[size];
+	for (int i = 0; i < size; i++) domain[i] = _domain_[i];
+	return 0;
+}
+
+int lsic::Cookie::setDomain(const char * _domain_)
+{
+	int size = 0;
+	while (_domain_[size] != '\0') size++;
+	size++;
+	domain = new char[size];
+	for (int i = 0; i < size; i++) domain[i] = _domain_[i];
+	return 0;
+}
+
 int lsic::Cookie::parseExpires(const std::string &str,int &ind , Cookie & c, bool is)
 {
 	//записываем название дня
@@ -453,6 +581,21 @@ int lsic::Cookie::parseDPM(const std::string &str, char *&that, int &ind)
 	}
 	that[size] = '\0';
 	return 0;
+}
+
+void lsic::Cookie::numToChar(std::string & str, int num)
+{
+	if (num < 10)
+	{
+		str += '0';
+		str += (num + '0');
+	}
+	while (num > 9)
+	{
+		str += ((num % 10) + '0');
+		num = num / 10;
+	}
+	str += (num + '0');
 }
 
 

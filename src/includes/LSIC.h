@@ -48,32 +48,54 @@ namespace lsic
 		/*static int Parse(const char *str, std::vector<Cookie> &storage);
 		static int Parse(const std::string &str, Cookie **storage);
 		static int Parse(const char *str, Cookie **storage);*/
-		/*возвращает имя данной куки в хранилище стринг*/
-		std::string name_string() const;
-		/*возвращает имя данной куки в массиве чаров*/
-		const char* name_char() const;
-		/*возвращает значение данной куки в хранилище стринг*/
-		std::string value_string() const;
-		/*возвращает значение данной куки в массиве чаров*/
-		const char* value_char() const;
-		/*изменить название куки*/
-		int setName(const std::string _name_);
-		int setName(const char *name);
-		/*установить новое значение для данной куки*/
-		int setValue(const std::string v);
-		int setValue(const char *v);
-		/*Функции возвращающи значения полей класса*/
+		
+	
+	
+	
+		/*----Функции возвращающи значения полей класса----*/
 		  char *getPath();
+		  /*возвращает значение данной куки в хранилище стринг*/
+		  std::string value_string() const;
+		  /*возвращает значение данной куки в массиве чаров*/
+		  const char* value_char() const;
+		  /*возвращает имя данной куки в хранилище стринг*/
+		  std::string name_string() const;
+		  /*возвращает имя данной куки в массиве чаров*/
+		  const char* name_char() const;
+		  /*в переданный массив, размера не меньще 7, записывает дату смерти куки в формате:
+		  [0] <номер дня недели> [1] <номер дня месяца> [2] <номер месяца в году>
+		  [3] <год> [4] <Час> [5] <минуты> [6] <секунды>
+		  (память уже должна быть выделена перед тем как передавать указатель на массив)*/
+		  int getExpires(int arr[7]);
+		  std::vector<int> getExpiresVec();//recomend use;
+		  /*возвращает строку даты смерти куки в формате:
+		  <day-name>, <day> <month> <year> <hour>:<minute>:<second> GMT*/
+		  std::string getExpiresStr();
+		  int getExpires(char arr[7]);// better don't use
+		  /*----Функции устанавливающие значения полей класса----*/
+		  /*изменить название куки*/
+		  int setName(const std::string _name_);
+		  int setName(const char *name);
+		  /*изменить значение куки*/
+		  int setValue(const std::string v);
+		  int setValue(const char *v);
+		  /*изменить путь действия куки*/
 		  int setPath(const std::string &v);
 		  int setPath(const char *v);
-		  /*Функции устанавливающие значения полей класса*/
+		  /*изменить время жизни куки, путем установления даты смерти*/
 		  int setExpires(short _month_, short _dayWeek_, short _dayMonth_, int _year_, short _hour_ = 0, short _minutes_ = 0, short _seconds_ = 0);
 		  int setExpires(std::string _data_);
+		  /*сделать куки одноразывами, после зовершения программы они будут забыты*/
 		  int notExpire();
+		  /*установить время жизни куки в секундах*/
 		  int setMaxAge(int _seconds_);
+		  /*установить домен, в котором будут работать куки*/
+		  int setDomain(const std::string _domain_);
+		  int setDomain(const char *_domain_);
 	private:
 		static int parseExpires(const std::string &str,int &start_index ,Cookie &c, bool is = true);
 		static int parseDPM(const std::string &str, char *&that, int &ind); // that = 0: Domain 1:Path 2:Max-Age
+		void numToChar(std::string &str, int num);
 
 
 	};
