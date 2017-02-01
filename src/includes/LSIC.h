@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _LSIC_H_
+#define _LSIC_H_
 #include <vector>
 #include <string>
 #include <openssl/rsa.h>
@@ -19,6 +20,15 @@
 
 namespace lsic
 {
+	/*class Options
+	{
+	private:
+		static char *pathConfigurateFile;
+		Options(){}
+	public:
+
+
+	};*/
 	enum TypeLink { ip, url };
 	enum Method{GET, POST, OPTIONS, HEAD, PUT, DELETE_ = DELETE, TRACE, CONNECT, PATCH};
 	/*класс описывающий объект куки, который позволяет обробатывать получаемую информацию
@@ -44,10 +54,10 @@ namespace lsic
 		Cookie(const Cookie &obj);
 		Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_, short _dayMonth_, short _dayWeek_, short _month_, short _hour_, short _min_, short _seconds_, int _year_);
 		/*вытаскивает все куки из заголовков ответа сервера*/
-		static int Parse(const std::string &str, std::vector<Cookie> &storage);
+		static int Parse_answer(const std::string &str, std::vector<Cookie> &storage);
 		/*static int Parse(const char *str, std::vector<Cookie> &storage);
-		static int Parse(const std::string &str, Cookie **storage);
-		static int Parse(const char *str, Cookie **storage);*/
+		static int Parse(const std::string &str, Cookie **storage);*/
+		static int Parse_request(const char *str, Cookie *storage, int start = 0);
 		
 	
 	
@@ -99,43 +109,104 @@ namespace lsic
 
 
 	};
-	/*Класс описывающий запросы к серверу и его ответы*/
+	/*Класс описывающий запросы к серверу и его ответы
+	автоматическая генерация заголовков. Хранения и обработка ответа сервера*/
 	class Request
 	{
 	private:
-		std::string body;
-		std::vector<Cookie> cookies;
-		std::string Headers;
+		char *body;
+		Cookie *cookies;
+		char *headers;
 	public:
+		/*Creating empty request-object*/
 		Request();
-		Request(const std::string &r_str);
+		/*processing string, which must be written in format:
+		<HTTP_method> <Path> HTTP/<Version_HTTP = 1.1>\r\nHost:<Host>\r\n<HTTP_Header>\r\n<HTTP_Header>\r\n......\r\n\r\n<BODY>
+		*/
+		//Message(const std::string &r_str);
 		Request(const char *r_str);
+		Request(const std::string http_headers, const std::string body);
 		Request(Request &Obj);
-		int set(const std::string &r_str);
 		int set(const char *r_str);
-		std::string get_string() const;//возвращет все заголовки в формате стиринг
-		char** get_char() const;//возвращет все заголовки в формате чар
-		int http_version() const;//возвращает используемую версию http
-		int set_method(Method &m);//устанавливает метод получения/передачи информации в http протоколе 
-		int setRequest(const std::string &r);
+		const char* getHeaders() const;//return all HTTP-Headers
+		char* getHeaders_notConst();
+		/*return value definite HTTP-Header, if Header absent, that return -1, if Header was found , that will be return 0*/
+		void getHeader(char *headerName, char* bucket);
+		int httpVersion() const;//возвращает используемую версию http
+		int set_method(Method &m, char *uri = nullptr);//устанавливает метод получения/передачи информации в http протоколе 
+		int setRequest(const std::string &r);//
 		int setRequest(const char &r);
 		int setHeader(const std::string &h);
 		int setHeader(const char &h);
 	};
-	/*класс занимающийся подключение, отправкой, приемом даннах от сервера*/
-	class ServerLink
+
+	class Answer
+	{
+
+	};
+	/*класс занимающийся подключение, отправкой, приемом даннах от сервера, КЛИЕНТА*/
+	class Linker
 	{
 	private:
 		std::vector<std::string> message;
 		std::string ServerConnection;
 		bool ssl;
 	public:
-		ServerLink();
-		ServerLink(ServerLink &Obj);
-		ServerLink(std::string link, TypeLink flag);
+		Linker();
+		Linker(Linker &Obj);
+		Linker(std::string link, TypeLink flag);
 		int set_server(std::string url, bool secure = false);
 		int connect();
 		int send();
-		int send(const Request &req);
+		int send(const Linker &req);
 	};
+
+	class LinkManager
+	{
+
+	};
+
+	//helper functions
+	//return size char-array(string). string must be ended zero-simbole('\0') 
+	inline int sizeArrChar(const char *arr)
+	{
+		if (arr = nullptr)
+		{
+			return 0;
+		}
+		else
+		{
+			int sizeResult = 0;
+			while (arr[sizeResult] != '\0') sizeResult++;
+			sizeResult++;
+			return sizeResult;
+		}
+	}
+	//substring is searched in string. returns the index of substring or return -1 if substring not found. -2 <- other error
+	inline int searchSubstr(const char *sub, const char *str, int subSize = -1, int strSize = -1,  int i = 0)
+	{
+		if (sub == nullptr || str == nullptr) return -1;
+		int sizeSubsting = sizeArrChar(sub);
+		int sizeSting = sizeArrChar(str);
+		int resultInd = -1;
+		for (; i < sizeSting; i++)
+		{
+			if (str[i] == sub[0])
+			{
+				resultInd = i;
+				bool is = true;
+				i++;
+				for (int j = 1; sub[j] < sizeSubsting, i < sizeSting; j++, i++)
+				{
+					if (sub[j] != sub[i]) is = false;
+				}
+				if (is) return resultInd;
+				else resultInd = -1;
+			}
+		}
+		return -1;
+	}
+
 }
+
+#endif _LSIC_H_

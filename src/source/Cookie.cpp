@@ -64,7 +64,7 @@ lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _pa
 	setExpires(_month_ , _dayWeek_, _dayMonth_, _year_, _hour_, _min_, _seconds_);
 }
 
-int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
+int lsic::Cookie::Parse_answer(const std::string & str, std::vector<Cookie>& storage)
 {
 	//поиск всех загаловков "Set-Cookie"
 	std::vector<int> ind;
@@ -140,6 +140,95 @@ int lsic::Cookie::Parse(const std::string & str, std::vector<Cookie>& storage)
 			case 'm':
 			{
 			//parseDPM(nv, NewCookie.maxAge);
+				nv.clear();
+				break;
+			}
+			default:
+			{
+				return -7;
+			}
+			}
+		}
+	}
+	return 0;
+}
+//todo Parse request
+int lsic::Cookie::Parse_request(const char * str, Cookie * storage, int start)
+{
+	std::vector<int> ind;
+	int shift = 0;
+
+	for (int i; (i = searchSubstr("Cookie:", str, 8, shift)) != -1; )
+	{
+		ind.push_back(i);
+		shift = i + 8;
+	}
+
+	//вытаскивание знанчений из заголовков
+	int sizeI = ind.size();
+	for (int i = 0; i <= sizeI; i++)
+	{
+		Cookie NewCookie;
+		int itmp = ind[i];
+		while (str[itmp] != ':') itmp++;
+		itmp++;
+		//запись имени куки
+		std::string nv;
+		for (; str[itmp] != '='; itmp++)
+		{
+
+			if (str[itmp] != ' ') nv.push_back(str[itmp]);
+
+		}
+		NewCookie.setName(nv);
+		nv.clear();
+		itmp++;
+		//запись значения куки
+		for (; str[itmp] != ';'; itmp++)
+		{
+			if (str[itmp] != ' ') nv.push_back(str[itmp]);
+		}
+		NewCookie.setValue(nv);
+		//itmp++;
+		nv.clear();
+		/*Вытаскивание опциональных параметров, таких как дата, хост, путь и др...*/
+		while (str[itmp] != '/r' && str[itmp] != '/n')
+		{
+			//todo минимизировать количество проверок на конец куки
+			itmp++;
+			for (; str[itmp] != '='; itmp++)
+			{
+				if (str[itmp] != ' ') nv.push_back(str[itmp]);
+
+			}
+			switch (nv[0])
+			{
+				//Expires
+			case 'e':
+			{
+				int err = parseExpires(str, itmp, NewCookie);
+				nv.clear();
+				if (err < 0) return err;
+				break;
+			}
+			//Domain
+			case 'd':
+			{
+				parseDPM(str, NewCookie.domain, itmp);
+				nv.clear();
+				break;
+			}
+			//Path
+			case 'p':
+			{
+				parseDPM(str, NewCookie.path, itmp);
+				nv.clear();
+				break;
+			}
+			//Max-Age
+			case 'm':
+			{
+				//parseDPM(nv, NewCookie.maxAge);
 				nv.clear();
 				break;
 			}
