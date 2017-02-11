@@ -18,7 +18,7 @@
 #pragma comment(lib, "Wsock32.lib")
 
 
-namespace lsic
+namespace hh
 {
 	/*class Options
 	{
@@ -57,7 +57,7 @@ namespace lsic
 		static int Parse_answer(const std::string &str, std::vector<Cookie> &storage);
 		/*static int Parse(const char *str, std::vector<Cookie> &storage);
 		static int Parse(const std::string &str, Cookie **storage);*/
-		static int Parse_request(const char *str, Cookie *storage, int start = 0);
+		static int Parse_request(const char *str, Cookie *&storage, int start = 0);
 		
 	
 	
@@ -114,9 +114,9 @@ namespace lsic
 	class Request
 	{
 	private:
-		char *body;
-		Cookie *cookies;
-		char *headers;
+		char *pointer_body;
+		//Cookie *cookies;
+		char *bufer;
 	public:
 		/*Creating empty request-object*/
 		Request();
@@ -125,22 +125,22 @@ namespace lsic
 		*/
 		//Message(const std::string &r_str);
 		Request(const char *r_str);
-		Request(const std::string http_headers, const std::string body);
-		Request(Request &Obj);
-		int set(const char *r_str);
-		const char* getHeaders() const;//return all HTTP-Headers
-		char* getHeaders_notConst();
+		Request(const std::string &http_headers, const std::string &body);
+		Request(const Request &Obj);
+		int set(const char *r_str);//set http request;
+		const char* get() const;//return all HTTP-Request
+		char* get_notConst();
 		/*return value definite HTTP-Header, if Header absent, that return -1, if Header was found , that will be return 0*/
-		void getHeader(char *headerName, char* bucket);
-		int httpVersion() const;//возвращает используемую версию http
+		int getHeader(char *headerName, char* &bucket) const; 
+		double httpVersion() const;//возвращает используемую версию http
 		int set_method(Method &m, char *uri = nullptr);//устанавливает метод получения/передачи информации в http протоколе 
-		int setRequest(const std::string &r);//
-		int setRequest(const char &r);
 		int setHeader(const std::string &h);
-		int setHeader(const char &h);
+		int setHeader(const char *h);
+		int addHeader(const std::string &h);
+		int addHeader(const char *h);
 	};
 
-	class Answer
+	class Response
 	{
 
 	};
@@ -170,7 +170,7 @@ namespace lsic
 	//return size char-array(string). string must be ended zero-simbole('\0') 
 	inline int sizeArrChar(const char *arr)
 	{
-		if (arr = nullptr)
+		if (arr == nullptr)
 		{
 			return 0;
 		}
@@ -186,19 +186,25 @@ namespace lsic
 	inline int searchSubstr(const char *sub, const char *str, int subSize = -1, int strSize = -1,  int i = 0)
 	{
 		if (sub == nullptr || str == nullptr) return -1;
-		int sizeSubsting = sizeArrChar(sub);
-		int sizeSting = sizeArrChar(str);
+		if(subSize == -1)
+			subSize = sizeArrChar(sub);
+		if (strSize == -1)
+			strSize = sizeArrChar(str);
 		int resultInd = -1;
-		for (; i < sizeSting; i++)
+		for (; i < strSize; i++)
 		{
 			if (str[i] == sub[0])
 			{
 				resultInd = i;
 				bool is = true;
 				i++;
-				for (int j = 1; sub[j] < sizeSubsting, i < sizeSting; j++, i++)
+				for (int j = 1; j < subSize - 1 && i < strSize; j++, i++)
 				{
-					if (sub[j] != sub[i]) is = false;
+					if (sub[j] != str[i])
+					{
+						is = false;
+						break;
+					}
 				}
 				if (is) return resultInd;
 				else resultInd = -1;

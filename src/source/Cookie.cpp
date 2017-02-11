@@ -1,4 +1,4 @@
-#include "LSIC.h"
+#include "HTTP_Helper.h"
 
 /*cookie - класс  описывающий объект куки, который позволяет обробатывать получаемую информацию
 
@@ -9,7 +9,7 @@ private:
 	char *domain;
 	char *path;*/
 
-lsic::Cookie::Cookie()
+hh::Cookie::Cookie()
 {
 	name = nullptr;
 	value = nullptr;
@@ -25,7 +25,7 @@ lsic::Cookie::Cookie()
 	maxAge = -1;
 }
 
-lsic::Cookie::Cookie(const Cookie & obj)
+hh::Cookie::Cookie(const Cookie & obj)
 {
 	name = obj.name;
 	value = obj.value;
@@ -41,7 +41,7 @@ lsic::Cookie::Cookie(const Cookie & obj)
 	maxAge = obj.maxAge;
 }
 
-lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_,short _dayMonth_ ,short _dayWeek_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
+hh::Cookie::Cookie(const char * _name_, const char * _value_, const char * _path_, const char * _domain_,short _dayMonth_ ,short _dayWeek_, short _month_, short _hour_, short _min_, short _seconds_, int _year_)
 {
 	int i = 0;
 	for (; _name_[i] != '\0'; i++) name[i] = _name_[i];
@@ -64,7 +64,7 @@ lsic::Cookie::Cookie(const char * _name_, const char * _value_, const char * _pa
 	setExpires(_month_ , _dayWeek_, _dayMonth_, _year_, _hour_, _min_, _seconds_);
 }
 
-int lsic::Cookie::Parse_answer(const std::string & str, std::vector<Cookie>& storage)
+int hh::Cookie::Parse_answer(const std::string & str, std::vector<Cookie>& storage)
 {
 	//поиск всех загаловков "Set-Cookie"
 	std::vector<int> ind;
@@ -153,12 +153,13 @@ int lsic::Cookie::Parse_answer(const std::string & str, std::vector<Cookie>& sto
 	return 0;
 }
 //todo Parse request
-int lsic::Cookie::Parse_request(const char * str, Cookie * storage, int start)
+int hh::Cookie::Parse_request(const char * str, Cookie *&storage, int start)
 {
+	int *numCookies = nullptr;
 	std::vector<int> ind;
 	int shift = 0;
-
-	for (int i; (i = searchSubstr("Cookie:", str, 8, shift)) != -1; )
+	int strSize = sizeArrChar(str);
+	for (int i; (i = searchSubstr("Cookie:", str, 8, strSize ,shift)) != -1; )
 	{
 		ind.push_back(i);
 		shift = i + 8;
@@ -166,93 +167,65 @@ int lsic::Cookie::Parse_request(const char * str, Cookie * storage, int start)
 
 	//вытаскивание знанчений из заголовков
 	int sizeI = ind.size();
-	for (int i = 0; i <= sizeI; i++)
+	numCookies = new int[sizeI];
+	//counting amount transmited Cookies 
+	for (int i = 0; i < sizeI; i++)
 	{
-		Cookie NewCookie;
+		int indexC = ind[i];
+		numCookies[i] = 0;
+		for (; str[indexC] != '\n'; indexC++)//TODO временное изменеие, текстовые редакторы удалают символ \r, временно используем символ \n
+			if (str[indexC] == ';') numCookies[i]++;
+		numCookies[i]++;
+	}
+	int AllSizeTMP = 0;
+	for (int i = 0; i < sizeI; i++) AllSizeTMP += numCookies[i];
+	storage = new Cookie[AllSizeTMP];
+	std::string nv;
+	for (int i = 0; i < sizeI; i++)
+	{
 		int itmp = ind[i];
+		//TODO временное изменеие, текстовые редакторы удалают символ \r, временно используем символ \n
+		//Cookie NewCookie;
 		while (str[itmp] != ':') itmp++;
 		itmp++;
-		//запись имени куки
-		std::string nv;
-		for (; str[itmp] != '='; itmp++)
+		
+		for (int j = 0; j < numCookies[i]; j++)
 		{
-
-			if (str[itmp] != ' ') nv.push_back(str[itmp]);
-
-		}
-		NewCookie.setName(nv);
-		nv.clear();
-		itmp++;
-		//запись значения куки
-		for (; str[itmp] != ';'; itmp++)
-		{
-			if (str[itmp] != ' ') nv.push_back(str[itmp]);
-		}
-		NewCookie.setValue(nv);
-		//itmp++;
-		nv.clear();
-		/*Вытаскивание опциональных параметров, таких как дата, хост, путь и др...*/
-		while (str[itmp] != '/r' && str[itmp] != '/n')
-		{
-			//todo минимизировать количество проверок на конец куки
-			itmp++;
+			//запись имени куки
+			
 			for (; str[itmp] != '='; itmp++)
 			{
+
 				if (str[itmp] != ' ') nv.push_back(str[itmp]);
 
 			}
-			switch (nv[0])
+			storage[j].setName(nv);
+			nv.clear();
+			itmp++;
+			//запись значения куки
+			for (; str[itmp] != ';' && str[itmp] != '\n'; itmp++)//TODO временное изменеие, текстовые редакторы удалают символ \r, временно используем символ \n
 			{
-				//Expires
-			case 'e':
-			{
-				int err = parseExpires(str, itmp, NewCookie);
-				nv.clear();
-				if (err < 0) return err;
-				break;
+				if (str[itmp] != ' ') nv.push_back(str[itmp]);
 			}
-			//Domain
-			case 'd':
-			{
-				parseDPM(str, NewCookie.domain, itmp);
-				nv.clear();
-				break;
-			}
-			//Path
-			case 'p':
-			{
-				parseDPM(str, NewCookie.path, itmp);
-				nv.clear();
-				break;
-			}
-			//Max-Age
-			case 'm':
-			{
-				//parseDPM(nv, NewCookie.maxAge);
-				nv.clear();
-				break;
-			}
-			default:
-			{
-				return -7;
-			}
-			}
+			storage[j].setValue(nv);
+			itmp++;//skip symbol semicolon
+			nv.clear();
 		}
 	}
 	return 0;
 }
 
-std::string lsic::Cookie::name_string() const
+std::string hh::Cookie::name_string() const
 {
 	return std::string(name);
 }
 
-const char * lsic::Cookie::name_char() const
+const char * hh::Cookie::name_char() const
 {
 	return name;
 }
 
-int lsic::Cookie::getExpires(int arr[7])
+int hh::Cookie::getExpires(int arr[7])
 {
 	if (arr == nullptr)
 		return -1;
@@ -266,7 +239,7 @@ int lsic::Cookie::getExpires(int arr[7])
 	return 0;
 }
 
-std::vector<int> lsic::Cookie::getExpiresVec()
+std::vector<int> hh::Cookie::getExpiresVec()
 {
 	std::vector<int> Expires;
 	Expires.push_back(dayWeek);
@@ -279,7 +252,7 @@ std::vector<int> lsic::Cookie::getExpiresVec()
 	return Expires;
 }
 
-std::string lsic::Cookie::getExpiresStr()
+std::string hh::Cookie::getExpiresStr()
 {
 	std::string Expires;
 	switch (dayWeek)
@@ -362,17 +335,17 @@ std::string lsic::Cookie::getExpiresStr()
 	return Expires;
 }
 
-std::string lsic::Cookie::value_string() const
+std::string hh::Cookie::value_string() const
 {
 	return std::string(value);
 }
 
-const char * lsic::Cookie::value_char() const
+const char * hh::Cookie::value_char() const
 {
 	return value;
 }
 
-int lsic::Cookie::setName(const std::string _name_)
+int hh::Cookie::setName(const std::string _name_)
 {
 	if (name != nullptr)
 	{
@@ -380,13 +353,14 @@ int lsic::Cookie::setName(const std::string _name_)
 		delete[] name;
 	}
 	int size = _name_.size();
-	name = new char[size];
-	for (int i = 0; i < size; i++)
+	name = new char[size+1];
+	for (int i = 0; i < size+1; i++)
 		name[i] = _name_[i];
+	name[size] = '\0';
 	return 0;
 }
 
-int lsic::Cookie::setName(const char * _name_)
+int hh::Cookie::setName(const char * _name_)
 {
 	if (name != nullptr)
 	{
@@ -402,7 +376,7 @@ int lsic::Cookie::setName(const char * _name_)
 	return 0;
 }
 
-int lsic::Cookie::setValue(const std::string _value_)
+int hh::Cookie::setValue(const std::string _value_)
 {
 	if (value != nullptr)
 	{
@@ -410,13 +384,14 @@ int lsic::Cookie::setValue(const std::string _value_)
 		delete[] value;
 	}
 	int size = _value_.size();
-	value = new char[size];
+	value = new char[size+1];
 	for (int i = 0; i < size; i++)
 		value[i] = _value_[i];
+	value[size] = '\0';
 	return 0;
 }
 
-int lsic::Cookie::setValue(const char * _value_)
+int hh::Cookie::setValue(const char * _value_)
 {
 	if (value != nullptr)
 	{
@@ -431,12 +406,12 @@ int lsic::Cookie::setValue(const char * _value_)
 	return 0;
 }
 
-char * lsic::Cookie::getPath()
+char * hh::Cookie::getPath()
 {
 	return path;
 }
 
-int lsic::Cookie::setPath(const std::string & v)
+int hh::Cookie::setPath(const std::string & v)
 {
 	if (path != nullptr)
 	{
@@ -450,7 +425,7 @@ int lsic::Cookie::setPath(const std::string & v)
 	return 0;
 }
 
-int lsic::Cookie::setPath(const char * v)
+int hh::Cookie::setPath(const char * v)
 {
 	if (path != nullptr)
 	{
@@ -466,7 +441,7 @@ int lsic::Cookie::setPath(const char * v)
 	return 0;
 }
 
-int lsic::Cookie::setExpires(short _month_, short _dayWeek_, short _dayMonth_, int _year_, short _hour_, short _minutes_, short _seconds_)
+int hh::Cookie::setExpires(short _month_, short _dayWeek_, short _dayMonth_, int _year_, short _hour_, short _minutes_, short _seconds_)
 {
 	if (_month_ > 0 && _month_ < 13 && _dayWeek_ > 0 && _dayWeek_ < 8 && _dayMonth_ > 0 && _dayMonth_ < 32 && _hour_ > -1
 		&& _hour_ < 24 && _minutes_ > -1 && _minutes_ < 60 && _seconds_ > -1 && _seconds_ < 60)
@@ -483,14 +458,14 @@ int lsic::Cookie::setExpires(short _month_, short _dayWeek_, short _dayMonth_, i
 		return -1;
 }
 
-int lsic::Cookie::setExpires(std::string _data_)
+int hh::Cookie::setExpires(std::string _data_)
 {
 	int ind = 0;
 	parseExpires(_data_, ind, *this, false);
 	return 0;
 }
 
-int lsic::Cookie::notExpire()
+int hh::Cookie::notExpire()
 {
 	dayWeek = -1;
 	dayMonth = -1;
@@ -501,7 +476,7 @@ int lsic::Cookie::notExpire()
 	return 0;
 }
 
-int lsic::Cookie::setMaxAge(int _seconds_)
+int hh::Cookie::setMaxAge(int _seconds_)
 {
 	if (_seconds_ > 0)
 	{
@@ -515,7 +490,7 @@ int lsic::Cookie::setMaxAge(int _seconds_)
 	return 0;
 }
 
-int lsic::Cookie::setDomain(const std::string _domain_)
+int hh::Cookie::setDomain(const std::string _domain_)
 {
 	int size = _domain_.size();
 	domain = new char[size];
@@ -523,7 +498,7 @@ int lsic::Cookie::setDomain(const std::string _domain_)
 	return 0;
 }
 
-int lsic::Cookie::setDomain(const char * _domain_)
+int hh::Cookie::setDomain(const char * _domain_)
 {
 	int size = 0;
 	while (_domain_[size] != '\0') size++;
@@ -533,7 +508,7 @@ int lsic::Cookie::setDomain(const char * _domain_)
 	return 0;
 }
 
-int lsic::Cookie::parseExpires(const std::string &str,int &ind , Cookie & c, bool is)
+int hh::Cookie::parseExpires(const std::string &str,int &ind , Cookie & c, bool is)
 {
 	//записываем название дня
 	//двигаемся к записи дня
@@ -653,7 +628,7 @@ int lsic::Cookie::parseExpires(const std::string &str,int &ind , Cookie & c, boo
 	return 0;
 }
 
-int lsic::Cookie::parseDPM(const std::string &str, char *&that, int &ind)
+int hh::Cookie::parseDPM(const std::string &str, char *&that, int &ind)
 {
 	ind++; // пропуск знака равно
 	//считаем длину значения
@@ -672,7 +647,7 @@ int lsic::Cookie::parseDPM(const std::string &str, char *&that, int &ind)
 	return 0;
 }
 
-void lsic::Cookie::numToChar(std::string & str, int num)
+void hh::Cookie::numToChar(std::string & str, int num)
 {
 	if (num < 10)
 	{
